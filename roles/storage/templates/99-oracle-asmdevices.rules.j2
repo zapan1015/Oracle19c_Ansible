@@ -1,0 +1,4 @@
+# Oracle ASM Devices - udev rules
+{% for disk in asm_disks %}
+KERNEL=="{{ disk.device | basename }}", SUBSYSTEM=="block", OWNER="grid", GROUP="asmadmin", MODE="0660"
+{% endfor %}

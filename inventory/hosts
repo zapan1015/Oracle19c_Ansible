@@ -1,0 +1,9 @@
+[rac_nodes]
+rac-node1 ansible_host=192.168.56.101
+rac-node2 ansible_host=192.168.56.102
+
+[rac_nodes:vars]
+ansible_user=vagrant
+ansible_password=vagrant
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+# We use ansible_password instead of ansible_ssh_pass (deprecated/alias)

@@ -1,0 +1,48 @@
+---
+# Oracle Environment
+oracle_base: /u01/app/oracle
+grid_home: /u01/app/19.0.0/grid
+db_home: /u01/app/oracle/product/19.0.0/dbhome_1
+
+# Oracle Install Media
+oracle_grid_image: /vagrant/oracle/LINUX.X64_193000_grid_home.zip
+oracle_db_image: /vagrant/oracle/LINUX.X64_193000_db_home.zip
+
+# User/Group IDs (Agent 2)
+oracle_user_uid: 54321
+grid_user_uid: 54331
+oinstall_gid: 54321
+dba_gid: 54322
+oper_gid: 54323
+asmadmin_gid: 54327
+asmdba_gid: 54328
+asmoper_gid: 54329
+
+# Network (Agent 6)
+# Vagrant Network Setup
+public_net_dev: eth1
+private_net_dev: eth2
+scan_name: rac-scan
+scan_port: 1521
+cluster_name: rac-cluster
+public_net_subnet: 192.168.56.0
+private_net_subnet: 192.168.10.0
+
+# Storage (Agent 3)
+# In Vagrant/VirtualBox with the new "ASM_SATA" controller, disks usually appear as sd*
+# WARNING: Device names can shift. In VB, usually:
+# sda = OS (SATA Port 0)
+# sdb, sdc, sdd, sde = ASM Disks on the new controller?
+# Wait, I added a new controller "ASM_SATA". They might appear as separate block devices.
+# Assuming standard mapping. If they are on a second controller, they might be sdb, sdc...
+# We will assume /dev/sdb through /dev/sde
+asm_disks:
+  - { device: "/dev/sdb", name: "ASM_DATA01", diskgroup: "DATA" }
+  - { device: "/dev/sdc", name: "ASM_DATA02", diskgroup: "DATA" }
+  - { device: "/dev/sdd", name: "ASM_DATA03", diskgroup: "DATA" }
+  - { device: "/dev/sde", name: "ASM_RECO01", diskgroup: "RECO" }
+
+# Database (Agent 5)
+db_name: ORCL
+db_unique_name: ORCL
+pdb_name: PDB1

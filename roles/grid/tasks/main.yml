@@ -1,0 +1,91 @@
+---
+# Grid Infrastructure Installation
+
+- name: Create Grid Directories
+  file:
+    path: "{{ grid_home }}"
+    state: directory
+    owner: grid
+    group: oinstall
+    mode: '0775'
+
+- name: Copy Grid Response File
+  template:
+    src: grid_19c.rsp.j2
+    dest: "{{ grid_home }}/grid_19c.rsp"
+    owner: grid
+    group: oinstall
+    mode: '0600'
+
+- name: Check if Grid is already extracted
+  stat:
+    path: "{{ grid_home }}/gridSetup.sh"
+  register: grid_extracted
+
+- name: Unzip Grid Media
+  unarchive:
+    src: "{{ oracle_grid_image }}"
+    dest: "{{ grid_home }}"
+    remote_src: yes
+    owner: grid
+    group: oinstall
+  when: not grid_extracted.stat.exists
+
+- name: Find cvuqdisk rpm
+  find:
+    paths: "{{ grid_home }}/cv/rpm"
+    patterns: "cvuqdisk*.rpm"
+  register: cvuqdisk_rpm
+
+- name: Install cvuqdisk package
+  dnf:
+    name: "{{ cvuqdisk_rpm.files[0].path }}"
+    state: present
+    disable_gpg_check: yes
+  environment:
+    CVUQDISK_GRP: oinstall
+
+- name: Install Grid Infrastructure (Silent) - Run on first node only
+  command: >
+    {{ grid_home }}/gridSetup.sh -silent
+    -responseFile {{ grid_home }}/grid_19c.rsp
+    -ignorePrereq
+    -waitforcompletion
+  args:
+    chdir: "{{ grid_home }}"
+  become: yes
+  become_user: grid
+  environment:
+    CV_ASSUME_DISTID: OL7
+  register: grid_install
+  failed_when: grid_install.rc not in [0, 6]
+  ignore_errors: yes
+  when: inventory_hostname == groups['rac_nodes'][0]
+  async: 3600
+  poll: 30
+
+- name: Run orainstRoot.sh
+  command: "{{ oracle_base }}/oraInventory/orainstRoot.sh"
+  become: yes
+
+- name: Run root.sh (Serialized - one node at a time)
+  command: "{{ grid_home }}/root.sh"
+  become: yes
+  throttle: 1
+  async: 1800
+  poll: 30
+
+- name: Create RECO Disk Group via ASMCA
+  shell: |
+    export ORACLE_HOME={{ grid_home }}
+    export ORACLE_SID=+ASM{{ play_hosts.index(inventory_hostname) + 1 }}
+    {{ grid_home }}/bin/asmca -silent \
+      -createDiskGroup \
+      -diskGroupName RECO \
+      -diskList '{{ asm_disks | selectattr("diskgroup", "equalto", "RECO") | map(attribute="device") | join(",") }}' \
+      -redundancy EXTERNAL \
+      -au_size 4
+  become: yes
+  become_user: grid
+  when: inventory_hostname == groups['rac_nodes'][0]
+  ignore_errors: yes

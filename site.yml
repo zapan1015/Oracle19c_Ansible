@@ -1,0 +1,20 @@
+---
+- name: Oracle 19c RAC 2-Node Automation
+  hosts: rac_nodes
+  become: yes
+  vars:
+    # Set this to true to run specific roles
+    run_common: true
+    run_storage: true
+    run_network: true
+    run_grid: true
+    run_database: true
+    run_validation: true
+
+  roles:
+    - { role: common, when: run_common }
+    - { role: network, when: run_network }
+    - { role: storage, when: run_storage }
+    - { role: grid, when: run_grid }
+    - { role: database, when: run_database }
+    - { role: validation, when: run_validation }

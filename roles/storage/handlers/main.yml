@@ -1,0 +1,4 @@
+---
+- name: Reload Udev
+  command: /sbin/udevadm trigger --type=devices --action=change
+  become: yes

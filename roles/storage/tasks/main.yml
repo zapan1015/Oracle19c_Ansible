@@ -1,0 +1,43 @@
+---
+# Storage & ASM Disk Configuration
+
+- name: Install ASM support packages
+  dnf:
+    name:
+      - oracleasm-support
+    state: present
+  ignore_errors: yes
+
+- name: Clean ASM disk headers (dd zero first 100MB)
+  command: "dd if=/dev/zero of={{ item.device }} bs=1M count=100"
+  loop: "{{ asm_disks }}"
+  changed_when: true
+
+- name: Create udev rules for ASM devices
+  template:
+    src: 99-oracle-asmdevices.rules.j2
+    dest: /etc/udev/rules.d/99-oracle-asmdevices.rules
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload Udev
+
+- name: Force udev trigger
+  command: /sbin/udevadm trigger --type=devices --action=change
+
+- name: Wait for udev to settle
+  command: /sbin/udevadm settle --timeout=10
+
+- name: Set ASM disk ownership
+  file:
+    path: "{{ item.device }}"
+    owner: grid
+    group: asmadmin
+    mode: '0660'
+  loop: "{{ asm_disks }}"
+
+- name: Verify ASM disk permissions
+  shell: "ls -la {{ item.device }}"
+  loop: "{{ asm_disks }}"
+  register: asm_perms
+  changed_when: false

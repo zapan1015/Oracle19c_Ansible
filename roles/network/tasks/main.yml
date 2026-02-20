@@ -1,0 +1,28 @@
+---
+# Network & Interconnect Configuration
+
+- name: Find connection name for private interconnect
+  shell: "nmcli -t -f NAME,DEVICE con show | grep {{ private_net_dev }} | cut -d: -f1"
+  register: priv_conn_name
+  changed_when: false
+
+- name: Configure Jumbo Frames for Private Interconnect
+  command: "nmcli connection modify '{{ priv_conn_name.stdout }}' 802-3-ethernet.mtu 9000"
+  when: priv_conn_name.stdout | length > 0
+  ignore_errors: yes
+
+- name: Apply network changes
+  command: "nmcli connection up '{{ priv_conn_name.stdout }}'"
+  when: priv_conn_name.stdout | length > 0
+  ignore_errors: yes
+
+- name: Verify connectivity to other node (public)
+  shell: "ping -c 2 {{ hostvars[item]['ansible_host'] }}"
+  loop: "{{ groups['rac_nodes'] }}"
+  when: item != inventory_hostname
+
+- name: Verify private interconnect connectivity
+  shell: "ping -c 2 {{ hostvars[item]['private_ip'] | default('192.168.10.' + hostvars[item]['ansible_host'].split('.')[-1]) }}"
+  loop: "{{ groups['rac_nodes'] }}"
+  when: item != inventory_hostname
+  ignore_errors: yes

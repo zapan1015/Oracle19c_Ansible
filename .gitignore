@@ -1,0 +1,17 @@
+# Oracle installation media (large binary files)
+/oracle/
+
+# Vagrant
+.vagrant/
+*.vdi
+
+# Ansible logs
+*.log
+
+# Debug/temp files
+debug_log.txt
+error_log_tail*.txt
+logpart_*
+
+# Buffer
+/buffer/

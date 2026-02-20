@@ -1,0 +1,187 @@
+---
+# Agent 2: OS & Prerequisites Specialist
+# Agent 1: Infrastructure Architect (Kernel Params)
+
+- name: Update /etc/hosts with inventory
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[item].ansible_host }} {{ item }} {{ item.split('.')[0] }}"
+    state: present
+  loop: "{{ groups['rac_nodes'] }}"
+
+- name: Update /etc/hosts with VIPs and SCAN (Agent 2)
+  blockinfile:
+    path: /etc/hosts
+    block: |
+      192.168.56.111 rac-node1-vip
+      192.168.56.112 rac-node2-vip
+      192.168.56.115 rac-scan
+
+- name: Install required packages (Agent 2)
+  dnf:
+    name:
+      - bc
+      - binutils
+      - glibc-devel
+      - ksh
+      - libaio-devel
+      - libnsl
+      - make
+      - net-tools
+      - nfs-utils
+      - smartmontools
+      - sysstat
+      - unzip
+      - xorg-x11-utils
+      - xorg-x11-xauth
+      - python3-libselinux 
+    state: present
+
+- name: Create Oracle Groups (Agent 2)
+  group:
+    name: "{{ item.name }}"
+    gid: "{{ item.gid }}"
+    state: present
+  loop:
+    - { name: 'oinstall', gid: "{{ oinstall_gid }}" }
+    - { name: 'dba', gid: "{{ dba_gid }}" }
+    - { name: 'oper', gid: "{{ oper_gid }}" }
+    - { name: 'asmadmin', gid: "{{ asmadmin_gid }}" }
+    - { name: 'asmdba', gid: "{{ asmdba_gid }}" }
+    - { name: 'asmoper', gid: "{{ asmoper_gid }}" }
+
+- name: Create Grid User (Agent 2)
+  user:
+    name: grid
+    uid: "{{ grid_user_uid }}"
+    group: oinstall
+    groups: asmadmin,asmdba,asmoper,dba
+    state: present
+    password: "{{ 'oracle' | password_hash('sha512') }}" # Set a default password
+
+- name: Create Oracle User (Agent 2)
+  user:
+    name: oracle
+    uid: "{{ oracle_user_uid }}"
+    group: oinstall
+    groups: dba,oper,asmdba
+    state: present
+    password: "{{ 'oracle' | password_hash('sha512') }}"
+
+- name: Configure Kernel Parameters (Agent 1)
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: 'fs.file-max', value: '6815744' }
+    - { name: 'kernel.sem', value: '250 32000 100 128' }
+    - { name: 'kernel.shmmni', value: '4096' }
+    - { name: 'kernel.panic_on_oops', value: '1' }
+    - { name: 'net.core.rmem_default', value: '262144' }
+    - { name: 'net.core.rmem_max', value: '4194304' }
+    - { name: 'net.core.wmem_default', value: '262144' }
+    - { name: 'net.core.wmem_max', value: '1048576' }
+    - { name: 'fs.aio-max-nr', value: '1048576' }
+    - { name: 'net.ipv4.ip_local_port_range', value: '9000 65500' }
+
+# Note: kernel.shmmax and kernel.shmall need calculation based on RAM.
+# For simplicity, we assume robust values or rely on Oracle Preinstall RPM if permitted, 
+# but here we hardcode reasonable minimums or rely on calculation logic if we added it.
+# We will set a static high value for now assuming 16GB+ RAM.
+    - { name: 'kernel.shmmax', value: '4294967295' } # 4GB (example, usually 50% RAM)
+    - { name: 'kernel.shmall', value: '2097152' } 
+
+- name: Disable SELinux (Immediate) (Agent 2)
+  command: setenforce 0
+  changed_when: false
+  failed_when: false
+
+- name: Disable SELinux (Permanent) (Agent 2)
+  lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: 'SELINUX=permissive'
+
+- name: Stop Firewalld (Simplification for RAC, or open ports) (Agent 2)
+  service:
+    name: firewalld
+    state: stopped
+    enabled: no
+  # Ideally we open ports: 1521, 5500, 6200, etc.
+  # For this request, we'll just stop it to ensure communication.
+
+- name: Create Directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: grid
+    group: oinstall
+    mode: '0775'
+    recurse: yes
+  loop:
+    - "{{ oracle_base }}"
+    - "{{ grid_home }}"
+
+- name: Create Oracle Home Directory
+  file:
+    path: "{{ db_home }}"
+    state: directory
+    owner: oracle
+    group: oinstall
+    mode: '0775'
+    recurse: yes
+
+- name: Configure resource limits for Oracle users
+  blockinfile:
+    path: /etc/security/limits.d/99-oracle.conf
+    create: yes
+    mode: '0644'
+    block: |
+      oracle   soft   nofile    1024
+      oracle   hard   nofile    65536
+      oracle   soft   nproc    16384
+      oracle   hard   nproc    16384
+      oracle   soft   stack    10240
+      oracle   hard   stack    32768
+      oracle   soft   memlock  unlimited
+      oracle   hard   memlock  unlimited
+      grid     soft   nofile    1024
+      grid     hard   nofile    65536
+      grid     soft   nproc    16384
+      grid     hard   nproc    16384
+      grid     soft   stack    10240
+      grid     hard   stack    32768
+      grid     soft   memlock  unlimited
+      grid     hard   memlock  unlimited
+
+- name: Configure Grid user bash_profile
+  blockinfile:
+    path: /home/grid/.bash_profile
+    create: yes
+    owner: grid
+    group: oinstall
+    marker: "# {mark} ORACLE GRID ENV"
+    block: |
+      export ORACLE_BASE={{ oracle_base }}
+      export ORACLE_HOME={{ grid_home }}
+      export PATH=$ORACLE_HOME/bin:$PATH
+      export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+
+- name: Configure Oracle user bash_profile
+  blockinfile:
+    path: /home/oracle/.bash_profile
+    create: yes
+    owner: oracle
+    group: oinstall
+    marker: "# {mark} ORACLE DB ENV"
+    block: |
+      export ORACLE_BASE={{ oracle_base }}
+      export ORACLE_HOME={{ db_home }}
+      export PATH=$ORACLE_HOME/bin:$PATH
+      export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+
+- name: Setup SSH Connectivity
+  import_tasks: ssh_setup.yml
+

@@ -1,0 +1,83 @@
+- name: Ensure .ssh directory exists
+  file:
+    path: "/home/{{ item }}/.ssh"
+    state: directory
+    owner: "{{ item }}"
+    group: oinstall
+    mode: '0700'
+  loop:
+    - grid
+    - oracle
+
+- name: Generate SSH keys for grid and oracle users (PEM format for JSch)
+  shell: |
+    if [ ! -f /home/{{ item }}/.ssh/id_rsa ] || head -1 /home/{{ item }}/.ssh/id_rsa | grep -q 'OPENSSH'; then
+      rm -f /home/{{ item }}/.ssh/id_rsa /home/{{ item }}/.ssh/id_rsa.pub
+      ssh-keygen -t rsa -b 2048 -m PEM -f /home/{{ item }}/.ssh/id_rsa -N '' -q
+      chown {{ item }}:oinstall /home/{{ item }}/.ssh/id_rsa /home/{{ item }}/.ssh/id_rsa.pub
+      chmod 600 /home/{{ item }}/.ssh/id_rsa
+      chmod 644 /home/{{ item }}/.ssh/id_rsa.pub
+    fi
+  args:
+    executable: /bin/bash
+  loop:
+    - grid
+    - oracle
+
+- name: Fetch public keys
+  slurp:
+    src: "/home/{{ item }}/.ssh/id_rsa.pub"
+  register: ssh_pubkeys
+  loop:
+    - grid
+    - oracle
+
+- name: Distribute authorized keys across all nodes
+  authorized_key:
+    user: "{{ item.0 }}"
+    state: present
+    key: "{{ hostvars[item.1]['ssh_pubkeys']['results'] | selectattr('item', 'equalto', item.0) | map(attribute='content') | first | b64decode }}"
+  loop: "{{ ['grid', 'oracle'] | product(groups['rac_nodes']) | list }}"
+
+- name: Configure SSH client for Oracle/Grid users
+  blockinfile:
+    path: "/home/{{ item }}/.ssh/config"
+    create: yes
+    owner: "{{ item }}"
+    group: oinstall
+    mode: '0600'
+    block: |
+      Host *
+        StrictHostKeyChecking no
+  loop:
+    - grid
+    - oracle
+
+- name: Populate known_hosts with unhashed RSA keys (JSch compatible)
+  shell: |
+    for addr in {% for h in groups['rac_nodes'] %}{{ h }} {{ hostvars[h]['ansible_host'] }} {% endfor %}; do
+      ssh-keyscan -t rsa $addr 2>/dev/null
+    done | sort -u > /home/{{ item }}/.ssh/known_hosts
+    chown {{ item }}:oinstall /home/{{ item }}/.ssh/known_hosts
+    chmod 644 /home/{{ item }}/.ssh/known_hosts
+  loop:
+    - grid
+    - oracle
+  args:
+    executable: /bin/bash
+
+- name: Verify SSH connectivity (grid)
+  shell: "ssh -o BatchMode=yes {{ item }} hostname"
+  become: yes
+  become_user: grid
+  loop: "{{ groups['rac_nodes'] }}"
+  register: ssh_verify_grid
+  ignore_errors: yes
+
+- name: Verify SSH connectivity (oracle)
+  shell: "ssh -o BatchMode=yes {{ item }} hostname"
+  become: yes
+  become_user: oracle
+  loop: "{{ groups['rac_nodes'] }}"
+  register: ssh_verify_oracle
+  ignore_errors: yes

@@ -1,0 +1,40 @@
+---
+# Agent 7: Validation & Health Check Specialist
+
+- name: Post-Install Cluster Check (CVU)
+  command: >
+    {{ grid_home }}/bin/cluvfy stage -post crsinst -n {{ groups['rac_nodes'] | join(',') }} -verbose
+  become: yes
+  become_user: grid
+  register: cvu_check
+  ignore_errors: yes
+
+- name: Check Cluster Resources
+  command: "{{ grid_home }}/bin/crsctl stat res -t"
+  become: yes
+  become_user: grid
+  register: crs_stat
+
+- name: Check Database Configuration
+  command: "{{ db_home }}/bin/srvctl config database -db {{ db_name }}"
+  become: yes
+  become_user: oracle
+  register: db_config
+
+- name: Generate Validation Report
+  copy:
+    content: |
+      Oracle 19c RAC Automation Validation Report
+      ===========================================
+      Timestamp: {{ ansible_date_time.iso8601 }}
+      
+      CVU Check Result:
+      {{ cvu_check.stdout }}
+      
+      Cluster Resources:
+      {{ crs_stat.stdout }}
+      
+      Database Configuration:
+      {{ db_config.stdout }}
+    dest: /tmp/validation_report_{{ ansible_date_time.date }}.txt
+  delegate_to: localhost

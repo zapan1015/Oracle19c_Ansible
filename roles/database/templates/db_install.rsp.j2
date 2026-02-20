@@ -1,0 +1,17 @@
+oracle.install.responseFileVersion=/oracle/install/rspfmt_dbinstall_response_schema_v19.0.0
+oracle.install.option=INSTALL_DB_SWONLY
+ORACLE_HOSTNAME={{ ansible_hostname }}
+UNIX_GROUP_NAME=oinstall
+INVENTORY_LOCATION={{ oracle_base }}/oraInventory
+SELECTED_LANGUAGES=en
+ORACLE_HOME={{ db_home }}
+ORACLE_BASE={{ oracle_base }}
+oracle.install.db.InstallEdition=EE
+oracle.install.db.OSDBA_GROUP=dba
+oracle.install.db.OSOPER_GROUP=oper
+oracle.install.db.OSBACKUPDBA_GROUP=dba
+oracle.install.db.OSDGDBA_GROUP=dba
+oracle.install.db.OSKMDBA_GROUP=dba
+oracle.install.db.OSRACDBA_GROUP=dba
+oracle.install.db.rac.configurationType=RAC
+oracle.install.db.CLUSTER_NODES={% for host in groups['rac_nodes'] %}{{ hostvars[host]['ansible_hostname'] | default(host) }}{% if not loop.last %},{% endif %}{% endfor %}
