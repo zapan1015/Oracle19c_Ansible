@@ -1,0 +1,41 @@
+INFO:  [Feb 13, 2026 6:04:06 PM] Using class oracle.install.commons.net.support.DefaultSSHSupportManager as proxy for oracle.install.commons.net.support.SSHSupportManager
+INFO:  [Feb 13, 2026 6:04:07 PM] Loaded state SSHPerformanceAddnode
+INFO:  [Feb 13, 2026 6:04:07 PM] Loaded state SSHPerformance
+INFO:  [Feb 13, 2026 6:04:07 PM] Loaded state FailureIsolationUI
+INFO:  [Feb 13, 2026 6:04:08 PM] State[CRSNodeScalerDetails]: route=success; to=SSHPerformanceAddnode
+INFO:  [Feb 13, 2026 6:04:08 PM] State[SSHPerformanceAddnode]: route=success; to=CRSNodeScalerDetailsVal
+INFO:  [Feb 13, 2026 6:04:08 PM] State[ASMInstanceCredentialsGUI]: route=STDORFLX; to=FailureIsolationUI
+INFO:  [Feb 13, 2026 6:04:08 PM] State[CRSNodeInformationUI]: route=success; to=SSHPerformance
+INFO:  [Feb 13, 2026 6:04:08 PM] State[ClientASMStorageUI]: route=success; to=FailureIsolationUI
+INFO:  [Feb 13, 2026 6:04:08 PM] State[FailureIsolationUI]: route=success; to=ManagementOptions
+INFO:  [Feb 13, 2026 6:04:08 PM] Condition of state[FailureIsolationUI]: route=matched; to=ManagementOptions
+INFO:  [Feb 13, 2026 6:04:08 PM] State[SSHPerformance]: route=success; to=CRSNodeInformationVal
+INFO:  [Feb 13, 2026 6:04:08 PM] State[SharedFileSystemStorageUI]: route=success; to=FailureIsolationUI
+INFO:  [Feb 13, 2026 6:04:08 PM] State[VDSKStorageUI]: route=STDORFLX; to=FailureIsolationUI
+INFO:  [Feb 13, 2026 6:04:08 PM] Setting value for the property:oracle_install_asm_DiskFailureGroupMap in the bean:oracle_install_asm_DiskGroup
+INFO:  [Feb 13, 2026 6:04:08 PM] Adding View[type: oracle.install.ivw.crs.view.FailureIsolationUI viewId: null uiType: null]
+ oracle_install_asm_DiskFailureGroupMap                 {}                                         
+ oracle_install_asm_FailureGroups                       {}                                         
+ oracle_install_asm_QuorumFailureGroups                 {}                                         
+INFO:  [Feb 13, 2026 6:04:16 PM] Executing initialize action at state SSHPerformance
+INFO:  [Feb 13, 2026 6:04:16 PM] Completed executing initialize action at state <SSHPerformance>
+INFO:  [Feb 13, 2026 6:04:16 PM] Executing action at state SSHPerformance
+INFO:  [Feb 13, 2026 6:04:16 PM] Completed executing action at state <SSHPerformance>
+INFO:  [Feb 13, 2026 6:04:16 PM] Moved to state <SSHPerformance>
+INFO:  [Feb 13, 2026 6:04:16 PM] Validating state <SSHPerformance>
+INFO:  [Feb 13, 2026 6:04:16 PM] Preparing Default SSH support manager
+INFO:  [Feb 13, 2026 6:04:16 PM] Added identity file /home/grid/.ssh/id_rsa
+INFO:  [Feb 13, 2026 6:04:16 PM] Set known hosts file to /home/grid/.ssh/known_hosts
+INFO:  [Feb 13, 2026 6:04:16 PM] Preparing to check passwordless SSH Connectivity between nodes: [rac-node1, rac-node2]
+INFO:  [Feb 13, 2026 6:04:16 PM] Testing passwordless SSH connectivity between the selected nodes. This may take several minutes, please wait...
+INFO:  [Feb 13, 2026 6:04:17 PM] SSH performance is: 395 milliseconds.
+INFO:  [Feb 13, 2026 6:04:17 PM] Completed validating state <SSHPerformance>
+INFO:  [Feb 13, 2026 6:04:23 PM] Validating SSH setup on local node
+INFO:  [Feb 13, 2026 6:04:23 PM] Preparing to check passwordless SSH Connectivity between nodes: [rac-node1, rac-node2]
+INFO:  [Feb 13, 2026 6:04:23 PM] Testing passwordless SSH connectivity between the selected nodes. This may take several minutes, please wait...
+INFO:  [Feb 13, 2026 6:04:23 PM] Verifying passwordless SSH connectivity setup on all the cluster nodes using cvu's NxN check
+INFO:  [Feb 13, 2026 6:04:46 PM] Total time taken to complete passwordless SSH verification is 22,546 ms.
+INFO:  [Feb 13, 2026 6:04:46 PM] Remote node(s) not configured for passwordless SSH connectivity :[rac-node2]
+SEVERE:  [Feb 13, 2026 6:04:46 PM] [FATAL] [INS-44000] Passwordless SSH connectivity is not setup from the local node rac-node1 to the following nodes: 
+Summary of node specific errors
+ - [INS-06006] Passwordless SSH connectivity not set up between the following node(s): [rac-node2].

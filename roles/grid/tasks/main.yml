@@ -45,6 +45,11 @@
   environment:
     CVUQDISK_GRP: oinstall
 
+- name: Check if Grid is already installed
+  stat:
+    path: "{{ oracle_base }}/oraInventory/orainstRoot.sh"
+  register: grid_already_installed
+
 - name: Install Grid Infrastructure (Silent) - Run on first node only
   command: >
     {{ grid_home }}/gridSetup.sh -silent
@@ -59,8 +64,9 @@
     CV_ASSUME_DISTID: OL7
   register: grid_install
   failed_when: grid_install.rc not in [0, 6]
-  ignore_errors: yes
-  when: inventory_hostname == groups['rac_nodes'][0]
+  when:
+    - inventory_hostname == groups['rac_nodes'][0]
+    - not grid_already_installed.stat.exists
   async: 3600
   poll: 30
 

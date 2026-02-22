@@ -1,0 +1,15 @@
+=== /ETC/HOSTS ===
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+127.0.1.1 rac-node1 rac-node1
+192.168.56.101 rac-node1 rac-node1
+192.168.56.102 rac-node2 rac-node2
+# BEGIN ANSIBLE MANAGED BLOCK
+192.168.56.111 rac-node1-vip
+192.168.56.112 rac-node2-vip
+192.168.56.115 rac-scan
+# END ANSIBLE MANAGED BLOCK
+=== HOSTNAME ===
+rac-node1
+=== CVU LOCATION ===
+ls: cannot access '/u01/app/19.0.0/grid/bin/cluvfy': No such file or directory

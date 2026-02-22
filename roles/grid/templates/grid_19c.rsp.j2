@@ -1,10 +1,12 @@
 oracle.install.responseFileVersion=/oracle/install/rspfmt_crsinstall_response_schema_v19.0.0
 INVENTORY_LOCATION={{ oracle_base }}/oraInventory
-oracle.install.option=CRS_CONFIG
+UNIX_GROUP_NAME=oinstall
+ORACLE_HOME={{ grid_home }}
 ORACLE_BASE={{ oracle_base }}
+oracle.install.option=CRS_CONFIG
 oracle.install.asm.OSDBA=asmdba
-oracle.install.asm.OSASM=asmadmin
 oracle.install.asm.OSOPER=asmoper
+oracle.install.asm.OSASM=asmadmin
 oracle.install.crs.config.scanType=LOCAL_SCAN
 oracle.install.crs.config.gpnp.scanName={{ scan_name }}
 oracle.install.crs.config.gpnp.scanPort={{ scan_port }}
@@ -13,7 +15,7 @@ oracle.install.crs.config.configureAsExtendedCluster=false
 oracle.install.crs.config.clusterName={{ cluster_name }}
 oracle.install.crs.config.gpnp.configureGNS=false
 oracle.install.crs.config.autoConfigureClusterNodeVIP=false
-oracle.install.crs.config.clusterNodes={% for host in groups['rac_nodes'] %}{{ hostvars[host]['ansible_hostname'] | default(host) }}:{{ hostvars[host]['ansible_hostname'] | default(host) }}-vip{% if not loop.last %},{% endif %}{% endfor %}
+oracle.install.crs.config.clusterNodes={% for host in groups['rac_nodes'] %}{{ host }}:{{ host }}-vip{% if not loop.last %},{% endif %}{% endfor %}
 
 oracle.install.crs.config.networkInterfaceList={{ public_net_dev }}:{{ public_net_subnet }}:1,{{ private_net_dev }}:{{ private_net_subnet }}:5
 oracle.install.crs.config.storageOption=FLEX_ASM_STORAGE
@@ -23,11 +25,11 @@ oracle.install.asm.monitorPassword=oracle
 oracle.install.asm.diskGroup.name=DATA
 oracle.install.asm.diskGroup.redundancy=EXTERNAL
 oracle.install.asm.diskGroup.AUSize=4
-oracle.install.asm.diskGroup.disksWithFailGroups={% for disk in asm_disks %}{% if disk.diskgroup == 'DATA' %}{{ disk.device }},,{% if not loop.last %},{% endif %}{% endif %}{% endfor %}
+oracle.install.asm.diskGroup.disks={{ asm_disks | selectattr('diskgroup', 'equalto', 'DATA') | map(attribute='device') | join(',') }}
 
 oracle.install.asm.diskGroup.diskDiscoveryString=/dev/sd*
-oracle.install.crs.config.useIPMI=false
 oracle.install.asm.configureAFD=false
+oracle.install.crs.config.useIPMI=false
 oracle.install.crs.config.ignoreDownNodes=false
 oracle.install.config.managementOption=NONE
 oracle.install.crs.rootconfig.executeRootScript=false

@@ -1,0 +1,12 @@
+KEY:
+-----BEGIN RSA PRIVATE KEY-----
+AUTH_COUNT:
+4 /home/grid/.ssh/authorized_keys
+KNOWN_COUNT:
+5 /home/grid/.ssh/known_hosts
+TEST1:
+rac-node1
+RC1=True
+TEST2:
+rac-node2
+RC2=True

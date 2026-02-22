@@ -1,0 +1,27 @@
+INFO:  [Feb 13, 2026 5:54:57 PM] Using class oracle.install.commons.net.support.DefaultSSHSupportManager as proxy for oracle.install.commons.net.support.SSHSupportManager
+INFO:  [Feb 13, 2026 5:54:58 PM] Loaded state SSHPerformanceAddnode
+INFO:  [Feb 13, 2026 5:54:59 PM] Loaded state SSHPerformance
+INFO:  [Feb 13, 2026 5:54:59 PM] State[CRSNodeScalerDetails]: route=success; to=SSHPerformanceAddnode
+INFO:  [Feb 13, 2026 5:54:59 PM] State[SSHPerformanceAddnode]: route=success; to=CRSNodeScalerDetailsVal
+INFO:  [Feb 13, 2026 5:54:59 PM] State[CRSNodeInformationUI]: route=success; to=SSHPerformance
+INFO:  [Feb 13, 2026 5:54:59 PM] State[SSHPerformance]: route=success; to=CRSNodeInformationVal
+INFO:  [Feb 13, 2026 5:55:09 PM] Executing initialize action at state SSHPerformance
+INFO:  [Feb 13, 2026 5:55:09 PM] Completed executing initialize action at state <SSHPerformance>
+INFO:  [Feb 13, 2026 5:55:09 PM] Executing action at state SSHPerformance
+INFO:  [Feb 13, 2026 5:55:09 PM] Completed executing action at state <SSHPerformance>
+INFO:  [Feb 13, 2026 5:55:09 PM] Moved to state <SSHPerformance>
+INFO:  [Feb 13, 2026 5:55:09 PM] Validating state <SSHPerformance>
+INFO:  [Feb 13, 2026 5:55:09 PM] Preparing Default SSH support manager
+INFO:  [Feb 13, 2026 5:55:09 PM] Set known hosts file to /home/grid/.ssh/known_hosts
+INFO:  [Feb 13, 2026 5:55:09 PM] Preparing to check passwordless SSH Connectivity between nodes: [rac-node1, rac-node2]
+INFO:  [Feb 13, 2026 5:55:09 PM] Testing passwordless SSH connectivity between the selected nodes. This may take several minutes, please wait...
+INFO:  [Feb 13, 2026 5:55:09 PM] SSH performance is: 472 milliseconds.
+INFO:  [Feb 13, 2026 5:55:09 PM] Completed validating state <SSHPerformance>
+INFO:  [Feb 13, 2026 5:55:16 PM] Validating SSH setup on local node
+INFO:  [Feb 13, 2026 5:55:16 PM] Preparing to check passwordless SSH Connectivity between nodes: [rac-node1, rac-node2]
+INFO:  [Feb 13, 2026 5:55:16 PM] Testing passwordless SSH connectivity between the selected nodes. This may take several minutes, please wait...
+INFO:  [Feb 13, 2026 5:55:16 PM] Verifying passwordless SSH connectivity setup on all the cluster nodes using cvu's NxN check
+INFO:  [Feb 13, 2026 5:55:39 PM] Total time taken to complete passwordless SSH verification is 23,036 ms.
+INFO:  [Feb 13, 2026 5:55:39 PM] Remote node(s) not configured for passwordless SSH connectivity :[rac-node2]
+SEVERE:  [Feb 13, 2026 5:55:39 PM] [FATAL] [INS-44000] Passwordless SSH connectivity is not setup from the local node rac-node1 to the following nodes: 
+ - [INS-06006] Passwordless SSH connectivity not set up between the following node(s): [rac-node2].
