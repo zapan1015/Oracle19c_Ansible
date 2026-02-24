@@ -20,9 +20,17 @@ asmoper_gid: 54329
 
 # Network (Agent 6)
 # Vagrant Network Setup
-public_net_dev: eth1
-private_net_dev: eth2
+public_net_dev: enp0s8
+private_net_dev: enp0s9
+# Cluster Hosts
+node1_public_ip: 192.168.56.101
+node1_priv_ip: 192.168.10.101
+node1_vip: 192.168.56.111
+node2_public_ip: 192.168.56.102
+node2_priv_ip: 192.168.10.102
+node2_vip: 192.168.56.112
 scan_name: rac-scan
+scan_ip: 192.168.56.115
 scan_port: 1521
 cluster_name: rac-cluster
 public_net_subnet: 192.168.56.0

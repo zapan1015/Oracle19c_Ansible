@@ -9,34 +9,42 @@
     - grid
     - oracle
 
-- name: Generate SSH keys for grid and oracle users (PEM format for JSch)
+- name: Generate SSH keys for grid and oracle users (PEM format) - Run on first node only
   shell: |
-    if [ ! -f /home/{{ item }}/.ssh/id_rsa ] || head -1 /home/{{ item }}/.ssh/id_rsa | grep -q 'OPENSSH'; then
-      rm -f /home/{{ item }}/.ssh/id_rsa /home/{{ item }}/.ssh/id_rsa.pub
-      ssh-keygen -t rsa -b 2048 -m PEM -f /home/{{ item }}/.ssh/id_rsa -N '' -q
-      chown {{ item }}:oinstall /home/{{ item }}/.ssh/id_rsa /home/{{ item }}/.ssh/id_rsa.pub
-      chmod 600 /home/{{ item }}/.ssh/id_rsa
-      chmod 644 /home/{{ item }}/.ssh/id_rsa.pub
-    fi
+    rm -f /home/{{ item }}/.ssh/id_rsa /home/{{ item }}/.ssh/id_rsa.pub
+    ssh-keygen -t rsa -b 2048 -m PEM -f /home/{{ item }}/.ssh/id_rsa -N '' -q
+    chown {{ item }}:oinstall /home/{{ item }}/.ssh/id_rsa /home/{{ item }}/.ssh/id_rsa.pub
+    chmod 600 /home/{{ item }}/.ssh/id_rsa
+    chmod 644 /home/{{ item }}/.ssh/id_rsa.pub
   args:
     executable: /bin/bash
   loop:
     - grid
     - oracle
+  when: inventory_hostname == groups['rac_nodes'][0]
 
-- name: Fetch public keys
+- name: Slurp SSH keys from first node
   slurp:
-    src: "/home/{{ item }}/.ssh/id_rsa.pub"
-  register: ssh_pubkeys
-  loop:
-    - grid
-    - oracle
+    src: "/home/{{ item.0 }}/.ssh/{{ item.1 }}"
+  register: ssh_keys_slurped
+  loop: "{{ ['grid', 'oracle'] | product(['id_rsa', 'id_rsa.pub']) | list }}"
+  when: inventory_hostname == groups['rac_nodes'][0]
 
-- name: Distribute authorized keys across all nodes
+- name: Distribute SSH keys to all nodes
+  copy:
+    dest: "/home/{{ item.1.0 }}/.ssh/{{ item.1.1 }}"
+    content: "{{ hostvars[groups['rac_nodes'][0]]['ssh_keys_slurped']['results'] | selectattr('item', 'equalto', item.1) | map(attribute='content') | first | b64decode }}"
+    owner: "{{ item.1.0 }}"
+    group: oinstall
+    mode: "{{ '0600' if item.1.1 == 'id_rsa' else '0644' }}"
+  loop: "{{ groups['rac_nodes'] | product(['grid', 'oracle'] | product(['id_rsa', 'id_rsa.pub']) | list) | list }}"
+  when: inventory_hostname != groups['rac_nodes'][0]
+
+- name: Add standardized public keys to authorized_keys on all nodes
   authorized_key:
     user: "{{ item.0 }}"
     state: present
-    key: "{{ hostvars[item.1]['ssh_pubkeys']['results'] | selectattr('item', 'equalto', item.0) | map(attribute='content') | first | b64decode }}"
+    key: "{{ hostvars[groups['rac_nodes'][0]]['ssh_keys_slurped']['results'] | selectattr('item', 'equalto', [item.0, 'id_rsa.pub']) | map(attribute='content') | first | b64decode }}"
   loop: "{{ ['grid', 'oracle'] | product(groups['rac_nodes']) | list }}"
 
 - name: Configure SSH client for Oracle/Grid users
@@ -55,9 +63,28 @@
 
 - name: Populate known_hosts with unhashed RSA keys (JSch compatible)
   shell: |
-    for addr in {% for h in groups['rac_nodes'] %}{{ h }} {{ hostvars[h]['ansible_host'] }} {% endfor %}; do
-      ssh-keyscan -t rsa $addr 2>/dev/null
-    done | sort -u > /home/{{ item }}/.ssh/known_hosts
+    # Generate list of hosts and IPs (Public, Private, VIP, SCAN)
+    HOSTS="localhost 127.0.0.1 rac-scan {{ scan_ip }}"
+    {% for h in groups['rac_nodes'] %}
+    # Public & Hostname
+    HOSTS="$HOSTS {{ h }} {{ hostvars[h].ansible_host }}"
+    # Private
+    PRIV_IP="192.168.10.{{ 100 + loop.index }}"
+    HOSTS="$HOSTS {{ h }}-priv $PRIV_IP"
+    # VIP
+    VIP_IP="192.168.56.{{ 110 + loop.index }}"
+    HOSTS="$HOSTS {{ h }}-vip $VIP_IP"
+    {% endfor %}
+    
+    # Clean up existing known_hosts
+    > /home/{{ item }}/.ssh/known_hosts
+    
+    # Populate with unhashed entries
+    for addr in $HOSTS; do
+      ssh-keyscan -t rsa $addr 2>/dev/null >> /home/{{ item }}/.ssh/known_hosts
+    done
+    
+    sort -u -o /home/{{ item }}/.ssh/known_hosts /home/{{ item }}/.ssh/known_hosts
     chown {{ item }}:oinstall /home/{{ item }}/.ssh/known_hosts
     chmod 644 /home/{{ item }}/.ssh/known_hosts
   loop:

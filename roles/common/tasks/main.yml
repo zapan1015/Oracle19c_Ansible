@@ -2,12 +2,27 @@
 # Agent 2: OS & Prerequisites Specialist
 # Agent 1: Infrastructure Architect (Kernel Params)
 
+- name: Remove redundant loops in /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    state: absent
+
 - name: Update /etc/hosts with inventory
   lineinfile:
     path: /etc/hosts
     line: "{{ hostvars[item].ansible_host }} {{ item }} {{ item.split('.')[0] }}"
     state: present
   loop: "{{ groups['rac_nodes'] }}"
+
+- name: Update /etc/hosts with private IPs
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[groups['rac_nodes'][0]][ 'node' ~ (idx + 1) ~ '_priv_ip' ] }} {{ item }}-priv"
+    state: present
+  loop: "{{ groups['rac_nodes'] }}"
+  loop_control:
+    index_var: idx
 
 - name: Update /etc/hosts with VIPs and SCAN (Agent 2)
   blockinfile:
@@ -85,6 +100,8 @@
     - { name: 'net.core.wmem_max', value: '1048576' }
     - { name: 'fs.aio-max-nr', value: '1048576' }
     - { name: 'net.ipv4.ip_local_port_range', value: '9000 65500' }
+    - { name: 'net.ipv6.conf.all.disable_ipv6', value: '1' }
+    - { name: 'net.ipv6.conf.default.disable_ipv6', value: '1' }
 
 # Note: kernel.shmmax and kernel.shmall need calculation based on RAM.
 # For simplicity, we assume robust values or rely on Oracle Preinstall RPM if permitted, 
@@ -181,6 +198,15 @@
       export ORACLE_HOME={{ db_home }}
       export PATH=$ORACLE_HOME/bin:$PATH
       export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+
+- name: Ensure silent login for grid and oracle users
+  shell: |
+    # Remove any line that might produce output in non-interactive shells
+    sed -i '/echo/d' /home/{{ item }}/.bashrc /home/{{ item }}/.bash_profile 2>/dev/null
+    sed -i '/date/d' /home/{{ item }}/.bashrc /home/{{ item }}/.bash_profile 2>/dev/null
+  loop:
+    - grid
+    - oracle
 
 - name: Setup SSH Connectivity
   import_tasks: ssh_setup.yml
