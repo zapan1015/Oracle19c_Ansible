@@ -61,7 +61,8 @@
   become: yes
   become_user: grid
   environment:
-    CV_ASSUME_DISTID: OL7
+    CV_ASSUME_DISTID: OL8
+
   register: grid_install
   failed_when: grid_install.rc not in [0, 6]
   when:
@@ -80,6 +81,16 @@
   throttle: 1
   async: 1800
   poll: 30
+
+- name: Revert SCP wrapper after installation
+  shell: |
+    if [ -f /usr/bin/scp.orig ]; then
+      mv -f /usr/bin/scp.orig /usr/bin/scp
+    fi
+  args:
+    executable: /bin/bash
+  when: ansible_distribution == 'OracleLinux' and ansible_distribution_major_version == '8'
+
 
 - name: Create RECO Disk Group via ASMCA
   shell: |

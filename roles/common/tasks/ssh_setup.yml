@@ -57,9 +57,25 @@
     block: |
       Host *
         StrictHostKeyChecking no
+        PubkeyAcceptedKeyTypes +ssh-rsa
+        HostKeyAlgorithms +ssh-rsa
+        PasswordAuthentication no
   loop:
     - grid
     - oracle
+
+- name: Create SCP wrapper for OL8 compatibility
+  shell: |
+    if [ ! -f /usr/bin/scp.orig ]; then
+      mv /usr/bin/scp /usr/bin/scp.orig
+    fi
+    echo '#!/bin/bash' > /usr/bin/scp
+    echo '/usr/bin/scp.orig -T "$@"' >> /usr/bin/scp
+    chmod 555 /usr/bin/scp
+  args:
+    executable: /bin/bash
+  when: ansible_distribution == 'OracleLinux' and ansible_distribution_major_version == '8'
+
 
 - name: Populate known_hosts with unhashed RSA keys (JSch compatible)
   shell: |
