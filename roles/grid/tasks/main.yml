@@ -92,7 +92,7 @@
   become: yes
   become_user: grid
   environment:
-    CV_ASSUME_DISTID: OL8
+    CV_ASSUME_DISTID: OL7
 
   register: grid_install
   failed_when: grid_install.rc not in [0, 6]
