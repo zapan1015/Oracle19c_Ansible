@@ -78,7 +78,7 @@
 
 - name: Check if Grid is already installed
   stat:
-    path: "{{ oracle_base }}/oraInventory/orainstRoot.sh"
+    path: "{{ grid_base }}/oraInventory/orainstRoot.sh"
   register: grid_already_installed
 
 - name: Install Grid Infrastructure (Silent) - Run on first node only
@@ -103,7 +103,7 @@
   poll: 30
 
 - name: Run orainstRoot.sh
-  command: "{{ oracle_base }}/oraInventory/orainstRoot.sh"
+  command: "{{ grid_base }}/oraInventory/orainstRoot.sh"
   become: yes
 
 - name: Run root.sh (Serialized - one node at a time)

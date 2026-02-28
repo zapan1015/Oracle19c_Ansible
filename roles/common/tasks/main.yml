@@ -139,6 +139,7 @@
     recurse: yes
   loop:
     - "{{ oracle_base }}"
+    - "{{ grid_base }}"
     - "{{ grid_home }}"
 
 - name: Create Oracle Home Directory
@@ -181,7 +182,7 @@
     group: oinstall
     marker: "# {mark} ORACLE GRID ENV"
     block: |
-      export ORACLE_BASE={{ oracle_base }}
+      export ORACLE_BASE={{ grid_base }}
       export ORACLE_HOME={{ grid_home }}
       export PATH=$ORACLE_HOME/bin:$PATH
       export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
@@ -194,7 +195,7 @@
     group: oinstall
     marker: "# {mark} ORACLE DB ENV"
     block: |
-      export ORACLE_BASE={{ oracle_base }}
+      export ORACLE_BASE={{ grid_base }}
       export ORACLE_HOME={{ db_home }}
       export PATH=$ORACLE_HOME/bin:$PATH
       export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
