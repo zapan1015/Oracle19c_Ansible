@@ -97,7 +97,7 @@
     
     # Populate with unhashed entries
     for addr in $HOSTS; do
-      ssh-keyscan -t rsa $addr 2>/dev/null >> /home/{{ item }}/.ssh/known_hosts
+      ssh-keyscan -t rsa,ecdsa,ed25519 $addr 2>/dev/null >> /home/{{ item }}/.ssh/known_hosts
     done
     
     sort -u -o /home/{{ item }}/.ssh/known_hosts /home/{{ item }}/.ssh/known_hosts

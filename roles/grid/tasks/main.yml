@@ -22,28 +22,59 @@
     path: "{{ grid_home }}/gridSetup.sh"
   register: grid_extracted
 
-- name: Unzip Grid Media
+- name: Clear Grid Home on other nodes (to avoid INS-44002)
+  file:
+    path: "{{ grid_home }}/"
+    state: "{{ item }}"
+    owner: grid
+    group: oinstall
+    mode: '0775'
+  loop:
+    - absent
+    - directory
+  when: inventory_hostname != groups['rac_nodes'][0]
+
+- name: Unzip Grid Media - Run on first node only
   unarchive:
     src: "{{ oracle_grid_image }}"
     dest: "{{ grid_home }}"
     remote_src: yes
     owner: grid
     group: oinstall
-  when: not grid_extracted.stat.exists
+  when: 
+    - not grid_extracted.stat.exists
+    - inventory_hostname == groups['rac_nodes'][0]
 
-- name: Find cvuqdisk rpm
+- name: Find cvuqdisk rpm (Node 1)
   find:
     paths: "{{ grid_home }}/cv/rpm"
     patterns: "cvuqdisk*.rpm"
   register: cvuqdisk_rpm
+  when: inventory_hostname == groups['rac_nodes'][0]
+
+- name: Fetch cvuqdisk RPM from Node 1
+  fetch:
+    src: "{{ cvuqdisk_rpm.files[0].path }}"
+    dest: "/tmp/cvuqdisk.rpm"
+    flat: yes
+  when: inventory_hostname == groups['rac_nodes'][0]
+
+- name: Copy cvuqdisk RPM to all nodes
+  copy:
+    src: "/tmp/cvuqdisk.rpm"
+    dest: "/tmp/cvuqdisk.rpm"
+    owner: grid
+    group: oinstall
+    mode: '0644'
 
 - name: Install cvuqdisk package
   dnf:
-    name: "{{ cvuqdisk_rpm.files[0].path }}"
+    name: "/tmp/cvuqdisk.rpm"
     state: present
     disable_gpg_check: yes
   environment:
     CVUQDISK_GRP: oinstall
+  become: yes
 
 - name: Check if Grid is already installed
   stat:
