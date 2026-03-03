@@ -110,8 +110,23 @@
   command: "{{ grid_home }}/root.sh"
   become: yes
   throttle: 1
-  async: 1800
-  poll: 30
+
+- name: Fix OLR permissions and group (Agent Fix)
+  file:
+    path: "{{ grid_base }}/crsdata/{{ inventory_hostname }}/olr/{{ inventory_hostname }}_19.olr"
+    owner: root
+    group: oinstall
+    mode: '0640'
+  become: yes
+
+- name: Wait for Cluster Services to be ready on Node 1
+  command: "{{ grid_home }}/bin/crsctl check cluster -all"
+  register: cluster_check
+  until: cluster_check.rc == 0
+  retries: 20
+  delay: 30
+  when: inventory_hostname == groups['rac_nodes'][0]
+  become: yes
 
 - name: Revert SCP wrapper after installation
   shell: |
